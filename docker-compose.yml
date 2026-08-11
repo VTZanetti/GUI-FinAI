@@ -1,0 +1,106 @@
+name: finai-stack
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: finai-postgres
+    environment:
+      POSTGRES_USER: finai
+      POSTGRES_PASSWORD: finai
+      POSTGRES_DB: finai
+    ports:
+      - "5432:5432"
+    volumes:
+      - finai_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [finai]
+
+  redis:
+    image: redis:7-alpine
+    container_name: finai-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks: [finai]
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: finai-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list | grep -q llama3.2"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s   # 1º pull do modelo demora
+    networks: [finai]
+
+  api:
+    build:
+      context: ../FinAI
+      dockerfile: Dockerfile
+    container_name: finai-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production        # migrations automáticas ON (Program.cs)
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=finai;Username=finai;Password=finai"
+      ConnectionStrings__Redis: "redis:6379,abortConnect=false"
+      Jwt__Issuer: FinAI
+      Jwt__Audience: FinAI.Clients
+      Jwt__AccessTokenTtlMinutes: "15"
+      Jwt__RefreshTokenTtlDays: "30"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-chave-dev-64-caracteres-para-docker-compose-local-000000}
+      Ai__Provider: Ollama
+      Ai__BaseUrl: http://ollama:11434
+      Ai__ChatModel: llama3.2
+      Ai__EmbeddingModel: nomic-embed-text
+      Ai__Enabled: "true"
+      Documents__ProcessingEnabled: "true"
+      Documents__StoragePath: /app/storage/documents
+      RateLimiting__Enabled: "true"
+      # Pluggy (opcional) — preencher no .env
+      Pluggy__ClientId: ${PLUGGY_CLIENT_ID:-}
+      Pluggy__ClientSecret: ${PLUGGY_CLIENT_SECRET:-}
+      Pluggy__ItemId: ${PLUGGY_ITEM_ID:-}
+      Pluggy__ScheduleEnabled: "false"
+    ports:
+      - "8080:8080"
+    volumes:
+      - finai_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks: [finai]
+
+  gui:
+    build: .
+    container_name: finai-gui
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    networks: [finai]
+
+volumes:
+  finai_pgdata:
+  ollama_data:
+  finai_storage:
+
+networks:
+  finai:
+    driver: bridge

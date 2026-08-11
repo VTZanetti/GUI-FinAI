@@ -1,0 +1,29 @@
+name: gui-finai
+
+# Stack da GUI no Portainer (separada da stack do backend FinAI).
+# Comunicação com a API via URL pública (VITE_API_BASE_URL) — docs/07-resiliencia-portainer.md §6.
+services:
+  gui:
+    image: ghcr.io/vtzanetti/gui-finai:${TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.finai.exemplo.com}
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    environment:
+      API_BASE_URL: ${VITE_API_BASE_URL}
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+    networks:
+      - gui_default
+
+networks:
+  gui_default:
+    driver: bridge
