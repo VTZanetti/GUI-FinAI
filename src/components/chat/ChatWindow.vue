@@ -24,7 +24,12 @@ watch(
   () => props.messages.length,
   async () => {
     await nextTick()
-    scrollRef.value?.scrollTo({ top: scrollRef.value.scrollHeight })
+    const el = scrollRef.value
+    if (el && typeof el.scrollTo === 'function') {
+      el.scrollTo({ top: el.scrollHeight })
+    } else if (el) {
+      el.scrollTop = el.scrollHeight
+    }
   }
 )
 </script>
