@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { resolveRouteGuard } from './guard'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -111,16 +112,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
-
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login', query: { redirect: to.fullPath } }
-  }
-  if (to.meta.requiresAdmin && !auth.isAdmin) {
-    return { name: 'dashboard', query: { denied: '1' } }
-  }
-  if ((to.name === 'login' || to.name === 'register') && auth.isAuthenticated) {
-    return { name: 'dashboard' }
-  }
+  return resolveRouteGuard(to, auth)
 })
 
 router.afterEach((to) => {

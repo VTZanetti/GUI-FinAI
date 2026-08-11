@@ -4,15 +4,20 @@ import { computed } from 'vue'
 const props = withDefaults(
   defineProps<{
     modelValue?: string | number
+    /** Compat com vee-validate: field.value */
+    value?: string | number
     label?: string
     type?: 'text' | 'email' | 'password' | 'number' | 'date'
     placeholder?: string
     error?: string
     disabled?: boolean
     required?: boolean
+    /** Compat com vee-validate: field.name */
+    name?: string
   }>(),
   {
     modelValue: '',
+    value: '',
     type: 'text',
     placeholder: '',
     disabled: false,
@@ -20,7 +25,14 @@ const props = withDefaults(
   }
 )
 
-const emit = defineEmits<{ 'update:modelValue': [value: string | number] }>()
+const emit = defineEmits<{
+  'update:modelValue': [value: string | number]
+  /** Compat com vee-validate: field.onInput */
+  input: [event: Event]
+  change: [event: Event]
+}>()
+
+const displayValue = computed(() => props.modelValue ?? props.value ?? '')
 
 const classes = computed(() => {
   const base =
@@ -31,6 +43,12 @@ const classes = computed(() => {
       : 'border-border focus:border-primary focus:ring-primary/30'
   }`
 })
+
+function handleInput(event: Event) {
+  const el = event.target as HTMLInputElement
+  emit('update:modelValue', el.value)
+  emit('input', event)
+}
 </script>
 
 <template>
@@ -39,13 +57,14 @@ const classes = computed(() => {
       {{ label }}<span v-if="required" class="text-danger"> *</span>
     </label>
     <input
+      :name="name"
       :type="type"
-      :value="modelValue"
+      :value="displayValue"
       :placeholder="placeholder"
       :disabled="disabled"
       :class="classes"
       :aria-invalid="Boolean(error)"
-      @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @input="handleInput"
     />
     <span v-if="error" class="text-xs text-danger" data-testid="field-error">{{ error }}</span>
   </div>
