@@ -3,10 +3,13 @@ import { ENDPOINTS } from '../endpoints'
 import { apiClient } from '../client'
 import { withRetry, RETRY_AI } from '../retry'
 import { normalizeClassification } from '../mappers'
+import { IS_DEMO_MODE } from '../mocks'
+import { demoClient } from '../mocks/demoClient'
 
 export const aiService = {
   /** Pré-classificação de transação (POST /ai/classify). */
   async classify(payload: ClassificationPayload): Promise<ClassificationResult> {
+    if (IS_DEMO_MODE) return demoClient.classify(payload)
     const data = await withRetry(
       () => apiClient.post<Record<string, unknown>>(ENDPOINTS.ai.classify, payload),
       RETRY_AI
@@ -16,6 +19,7 @@ export const aiService = {
 
   /** Assistente financeiro — timeout longo (90s). */
   async financialAdvisor(payload: AdvisorPayload): Promise<AdvisorResponse> {
+    if (IS_DEMO_MODE) return demoClient.advisor(payload)
     const data = await withRetry(
       () =>
         apiClient.post<Record<string, unknown>>(ENDPOINTS.ai.financialAdvisor, payload, {

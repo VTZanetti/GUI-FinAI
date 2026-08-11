@@ -2,9 +2,30 @@ import type { AdminUser, AuditLog, AuditLogFilters, PagedResponse } from '@/type
 import { ENDPOINTS } from '../endpoints'
 import { apiClient } from '../client'
 import { withRetry, RETRY_GET_DEFAULT } from '../retry'
+import { IS_DEMO_MODE } from '../mocks'
 
 export const adminService = {
   async auditLogs(filters: AuditLogFilters = {}): Promise<PagedResponse<AuditLog>> {
+    if (IS_DEMO_MODE) {
+      return {
+        items: [
+          {
+            id: 'demo-1',
+            userId: 'demo-user',
+            action: 'transaction.create',
+            entityType: 'Transaction',
+            entityId: 'tx-1',
+            metadata: { amount: '***' },
+            ipAddress: '127.0.0.1',
+            occurredAt: new Date().toISOString()
+          }
+        ],
+        page: 1,
+        pageSize: 50,
+        totalItems: 1,
+        totalPages: 1
+      }
+    }
     const params: Record<string, string | number> = {}
     if (filters.page) params.page = filters.page
     if (filters.pageSize) params.pageSize = filters.pageSize
@@ -36,6 +57,18 @@ export const adminService = {
   },
 
   async users(): Promise<AdminUser[]> {
+    if (IS_DEMO_MODE) {
+      return [
+        {
+          id: 'demo-user',
+          email: 'demo@finai.local',
+          firstName: 'Demonstração',
+          lastName: 'FinAI',
+          createdAt: new Date().toISOString(),
+          roles: ['User']
+        }
+      ]
+    }
     const data = await withRetry(() => apiClient.get<Record<string, unknown>[]>(ENDPOINTS.admin.users), RETRY_GET_DEFAULT)
     return (data.data ?? []).map((u) => ({
       id: String(u.id ?? ''),

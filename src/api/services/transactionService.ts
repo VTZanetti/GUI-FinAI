@@ -3,6 +3,8 @@ import { ENDPOINTS } from '../endpoints'
 import { apiClient } from '../client'
 import { withRetry, RETRY_GET_DEFAULT } from '../retry'
 import { normalizeTransaction } from '../mappers'
+import { IS_DEMO_MODE } from '../mocks'
+import { demoClient } from '../mocks/demoClient'
 
 /** Converte filtros em query params (removendo vazios). */
 export function toQueryParams(filters: TransactionFilters): Record<string, string | number | boolean> {
@@ -25,6 +27,7 @@ export function toQueryParams(filters: TransactionFilters): Record<string, strin
 
 export const transactionService = {
   async list(filters: TransactionFilters = {}): Promise<PagedResponse<Transaction>> {
+    if (IS_DEMO_MODE) return demoClient.listTransactions(filters as unknown as Record<string, unknown>)
     const data = await withRetry(
       () =>
         apiClient.get<PagedResponse<Record<string, unknown>>>(ENDPOINTS.transactions, {
@@ -42,11 +45,13 @@ export const transactionService = {
   },
 
   async create(payload: TransactionPayload): Promise<Transaction> {
+    if (IS_DEMO_MODE) return demoClient.createTransaction(payload as unknown as Record<string, unknown>)
     const { data } = await apiClient.post<Record<string, unknown>>(ENDPOINTS.transactions, payload)
     return normalizeTransaction(data)
   },
 
   async update(id: string, payload: TransactionPayload): Promise<Transaction> {
+    if (IS_DEMO_MODE) return demoClient.updateTransaction(id, payload as unknown as Record<string, unknown>)
     const { data } = await apiClient.put<Record<string, unknown>>(
       `${ENDPOINTS.transactions}/${id}`,
       payload
@@ -55,6 +60,7 @@ export const transactionService = {
   },
 
   async remove(id: string): Promise<void> {
+    if (IS_DEMO_MODE) return demoClient.deleteTransaction(id)
     await apiClient.delete(`${ENDPOINTS.transactions}/${id}`)
   }
 }

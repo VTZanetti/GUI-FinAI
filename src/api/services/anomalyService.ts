@@ -3,9 +3,12 @@ import { ENDPOINTS } from '../endpoints'
 import { apiClient } from '../client'
 import { withRetry, RETRY_GET_DEFAULT } from '../retry'
 import { normalizeAnomalies } from '../mappers'
+import { IS_DEMO_MODE } from '../mocks'
+import { demoClient } from '../mocks/demoClient'
 
 export const anomalyService = {
   async list(filters: AnomalyFilters = {}): Promise<AnomalyListResponse> {
+    if (IS_DEMO_MODE) return demoClient.listAnomalies()
     const params: Record<string, string> = {}
     if (filters.from) params.from = filters.from
     if (filters.to) params.to = filters.to
@@ -19,6 +22,7 @@ export const anomalyService = {
   },
 
   async check(payload: AnomalyCheckPayload): Promise<AnomalyCheckResponse> {
+    if (IS_DEMO_MODE) return { anomaly: false, score: 0.1, reason: 'demo', suggestedAction: 'none', method: 'zscore' }
     const { data } = await apiClient.post<Record<string, unknown>>(ENDPOINTS.anomaliesCheck, payload)
     return {
       anomaly: Boolean(data.anomaly),
