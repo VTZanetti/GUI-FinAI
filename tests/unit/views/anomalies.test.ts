@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { createRouter, createMemoryHistory } from 'vue-router'
 
 vi.mock('@/api/mocks', () => ({ IS_DEMO_MODE: false }))
 vi.mock('@/api/mocks/demoClient', async () => {
@@ -28,6 +29,16 @@ const anomalies = {
   ]
 }
 
+function makeRouter() {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/transactions', name: 'transactions', component: { template: '<div />' } },
+      { path: '/', redirect: '/transactions' }
+    ]
+  })
+}
+
 describe('AnomaliesView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -36,7 +47,7 @@ describe('AnomaliesView', () => {
 
   it('carrega e exibe anomalias com score', async () => {
     vi.spyOn(anomalyService, 'list').mockResolvedValue(anomalies)
-    const wrapper = mount(AnomaliesView, { global: { plugins: [createPinia()] } })
+    const wrapper = mount(AnomaliesView, { global: { plugins: [createPinia(), makeRouter()] } })
     await flushPromises()
     await new Promise((r) => setTimeout(r, 50))
     expect(wrapper.text()).toContain('Supermercado Extra')
@@ -45,7 +56,7 @@ describe('AnomaliesView', () => {
 
   it('mostra estado vazio', async () => {
     vi.spyOn(anomalyService, 'list').mockResolvedValue({ method: 'zscore', items: [] })
-    const wrapper = mount(AnomaliesView, { global: { plugins: [createPinia()] } })
+    const wrapper = mount(AnomaliesView, { global: { plugins: [createPinia(), makeRouter()] } })
     await flushPromises()
     await new Promise((r) => setTimeout(r, 50))
     expect(wrapper.text()).toContain('Nenhuma anomalia')

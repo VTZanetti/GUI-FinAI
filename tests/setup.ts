@@ -27,7 +27,7 @@ if (typeof window.matchMedia === 'undefined') {
 }
 
 // Mock de canvas para Chart.js em jsdom (evita warnings "can't acquire context")
-HTMLCanvasElement.prototype.getContext = (() => {
+;(HTMLCanvasElement.prototype.getContext as unknown) = (() => {
   const original = HTMLCanvasElement.prototype.getContext
   return function getContext(
     this: HTMLCanvasElement,
@@ -35,7 +35,6 @@ HTMLCanvasElement.prototype.getContext = (() => {
     ...args: unknown[]
   ): CanvasRenderingContext2D | null {
     if (contextId === '2d') {
-      // Retorna um stub 2D mínimo aceito pelo Chart.js
       const ctx = {
         canvas: this,
         clearRect: () => {},
@@ -89,7 +88,13 @@ HTMLCanvasElement.prototype.getContext = (() => {
       } as unknown as CanvasRenderingContext2D
       return ctx
     }
-    return original?.call(this, contextId, ...args) ?? null
+    return (
+      (original as unknown as (ctx: string, ...a: unknown[]) => CanvasRenderingContext2D | null)?.call(
+        this,
+        contextId,
+        ...args
+      ) ?? null
+    )
   }
 })()
 

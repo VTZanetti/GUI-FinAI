@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
       globals: true,
       setupFiles: ['./tests/setup.ts'],
       css: false,
+      exclude: ['node_modules/**', 'dist/**', 'tests/e2e/**'],
       coverage: {
         provider: 'v8',
         include: ['src/api/**', 'src/stores/**', 'src/utils/**', 'src/composables/**'],

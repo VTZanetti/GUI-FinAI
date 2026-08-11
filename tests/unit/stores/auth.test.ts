@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
+import { authService } from '@/api/services/authService'
 
 // Demo mode OFF nos testes de store
 vi.mock('@/api/mocks', () => ({ IS_DEMO_MODE: false }))
@@ -58,6 +59,7 @@ describe('stores/auth', () => {
   })
 
   it('logout limpa a sessão', async () => {
+    vi.spyOn(authService, 'logout').mockResolvedValue()
     const store = useAuthStore()
     store.setSession('t', 'r', { userId: 'u', email: 'a', firstName: 'x', role: 'User' })
     await store.logout()
